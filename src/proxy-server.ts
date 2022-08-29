@@ -117,8 +117,6 @@ export class ProxyServer extends EventEmitter {
             }
           }
 
-
-
           break
         default:
           this.logger.warn({ client: pick(client, 'remoteAddress') }, `unknown handshake state ${nextState}`)
