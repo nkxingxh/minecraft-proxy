@@ -57,6 +57,12 @@ export class Config {
   @ValidateNested() proxy: ConfigProxy
   @ValidateNested({each: true}) @Type(() => ConfigServer) servers: ConfigServer[]
   @IsOptional() @IsString() public defaultServer?: string
+
+  @IsOptional() @IsBoolean() public useAuthServer: boolean = false
+  @IsUrl({protocols: ['http', 'https']}) authServerUrl = 'https://example.com/mc_auth.php'
+  @IsUrl({protocols: ['http', 'https']}) authServerKey = ''
+  @IsOptional() @IsBoolean() public authUuid: boolean = false
+
   @IsOptional() @IsBoolean() public allowListOnly: boolean = false
   @ValidateNested() public blockList: BlockList
   @IsOptional() @ValidateNested() public allowList: BlockList

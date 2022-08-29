@@ -1,14 +1,15 @@
 import * as Logger from 'bunyan'
-import {isWorker, worker} from 'cluster'
-import {EventEmitter} from 'events'
-import {pick} from 'lodash'
-import {createServer, Server, Socket} from 'net'
-import {Container} from 'typedi'
-import {Backend, IBackend} from './backend'
-import {Client} from './client'
-import {Config} from './config'
-import {EnumHandShakeState} from './constants'
-import {PluginHook} from './plugin-hook'
+import { isWorker, worker } from 'cluster'
+import { EventEmitter } from 'events'
+import { pick } from 'lodash'
+import { createServer, Server, Socket } from 'net'
+import { Container } from 'typedi'
+import { Backend, IBackend } from './backend'
+import { Client } from './client'
+import { Config } from './config'
+import { EnumHandShakeState } from './constants'
+import { PluginHook } from './plugin-hook'
+import { fetch } from 'node-fetch';
 
 export class ProxyServer extends EventEmitter {
   public clients: Set<Client> = new Set()
@@ -27,7 +28,7 @@ export class ProxyServer extends EventEmitter {
     private host?: string,
   ) {
     super()
-    const loggerOptions: Logger.LoggerOptions = {name: 'server', port, host, level: this.config.loglevel}
+    const loggerOptions: Logger.LoggerOptions = { name: 'server', port, host, level: this.config.loglevel }
     if (isWorker) {
       loggerOptions.worker = worker.id
     }
@@ -71,18 +72,18 @@ export class ProxyServer extends EventEmitter {
   private async onConnection(socket: Socket): Promise<void> {
     if (this.isIpBanned(socket.remoteAddress)) {
       socket.end()
-      this.logger.warn({ip: socket.remoteAddress}, `block ip ${socket.remoteAddress}`)
+      this.logger.warn({ ip: socket.remoteAddress }, `block ip ${socket.remoteAddress}`)
       return
     }
     const client = new Client(socket, this)
     this.clients.add(client)
     socket.once('disconnect', () => this.onDisconnect(client))
     socket.on('error', (err) => {
-      this.logger.error({err})
+      this.logger.error({ err })
     })
     try {
       const nextState = await client.awaitHandshake()
-      this.logger.debug({nextState}, 'handshake success')
+      this.logger.debug({ nextState }, 'handshake success')
       const backend = await this.getBackend(client.host)
       if (!backend) return client.close(`${client.host} not found`)
       switch (nextState) {
@@ -93,23 +94,34 @@ export class ProxyServer extends EventEmitter {
           }
           break
         case EnumHandShakeState.login:
-          if (client.username && this.isUsernameBanned(client.username)) {
-            this.logger.warn({
-              ip: socket.remoteAddress, username: client.username,
-            }, `block username ${client.username}`)
-            client.close(this.config.message.bannedUsername)
-            return
+          if (this.config.useAuthServer) {
+            let resp = await this.authUserFromServer();
+            if(resp != 'ok') {
+              client.close(resp);
+              return;
+            }
+          } else {
+            if (client.username && this.isUsernameBanned(client.username)) {
+              this.logger.warn({
+                ip: socket.remoteAddress, username: client.username,
+              }, `block username ${client.username}`)
+              client.close(this.config.message.bannedUsername)
+              return
+            }
+            if (!this.config.allowListOnly && backend.onlineMode && this.isUuidBanned(await client.getUUID(backend))) {
+              this.logger.warn({
+                ip: socket.remoteAddress, username: client.username, uuid: await client.getUUID(backend),
+              }, `block uuid ${await client.getUUID(backend)}`)
+              client.close(this.config.message.bannedUUID)
+              return
+            }
           }
-          if (!this.config.allowListOnly && backend.onlineMode && this.isUuidBanned(await client.getUUID(backend))) {
-            this.logger.warn({
-              ip: socket.remoteAddress, username: client.username, uuid: await client.getUUID(backend),
-            }, `block uuid ${await client.getUUID(backend)}`)
-            client.close(this.config.message.bannedUUID)
-            return
-          }
+
+
+
           break
         default:
-          this.logger.warn({client: pick(client, 'remoteAddress')}, `unknown handshake state ${nextState}`)
+          this.logger.warn({ client: pick(client, 'remoteAddress') }, `unknown handshake state ${nextState}`)
           client.close(`unknown handshake state ${nextState}`)
       }
 
@@ -129,6 +141,22 @@ export class ProxyServer extends EventEmitter {
       return !this.config.allowList.ips.some((cidr) => cidr.contains(ip))
     }
     return this.config.blockList.ips.some((cidr) => cidr.contains(ip))
+  }
+
+  private async authUserFromServer(username = "", uuid = ""): Promise<string> {
+    try {
+      const resp = await fetch(
+        this.config.authServerUrl + "?key=" + this.config.authServerKey + "&username=" + username + "&uuid=" + uuid, {
+        method: 'GET', headers: {
+          Accept: 'application/json',
+        }
+      });
+      if (resp.code == 200) return 'ok';
+      else return resp.msg;
+    }
+    catch (e) {
+      return "请求授权服务器时发生错误, 请稍后重试\n如果问题持续存在, 请联系技术人员";
+    }
   }
 
   private isUsernameBanned(username: string): boolean {

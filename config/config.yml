@@ -3,6 +3,12 @@ proxy:
   host: 0.0.0.0
   workers: 0
 defaultServer: localhost
+
+useAuthServer: false
+authServerUrl: https://gnp.xyun.cloud/mc_auth.php
+authServerKey: 123456
+authUuid: false
+
 allowListOnly: false
 allowList:
   ips: ["0.0.0.0/0"]
