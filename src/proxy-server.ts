@@ -145,7 +145,7 @@ export class ProxyServer extends EventEmitter {
   private async authUserFromServer(username = "", uuid = ""): Promise<string> {
     try {
       const resp = await fetch(
-        this.config.authServerUrl + "?key=" + this.config.authServerKey + "&username=" + username + "&uuid=" + uuid + "&group=" + this.config.authGroup, {
+        this.config.authServerUrl + "?key=" + this.config.authServerKey + "&user=" + username + "&uuid=" + uuid + "&group=" + this.config.authGroup, {
         method: 'GET', headers: {
           Accept: 'application/json',
         }
