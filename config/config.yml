@@ -7,6 +7,7 @@ defaultServer: localhost
 useAuthServer: false
 authServerUrl: https://gnp.xyun.cloud/mc_auth.php
 authServerKey: 123456
+authGroup: default
 authUuid: false
 
 allowListOnly: false

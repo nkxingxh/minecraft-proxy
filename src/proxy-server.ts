@@ -10,6 +10,7 @@ import { Config } from './config'
 import { EnumHandShakeState } from './constants'
 import { PluginHook } from './plugin-hook'
 import { fetch } from 'node-fetch';
+import { group } from 'console'
 
 export class ProxyServer extends EventEmitter {
   public clients: Set<Client> = new Set()
@@ -94,9 +95,9 @@ export class ProxyServer extends EventEmitter {
           }
           break
         case EnumHandShakeState.login:
-          if (this.config.useAuthServer) {
-            let resp = await this.authUserFromServer();
-            if(resp != 'ok') {
+          if (backend.onlineMode && this.config.useAuthServer) {
+            let resp = await this.authUserFromServer(client.username, await client.getUUID(backend));
+            if (resp != 'ok') {
               client.close(resp);
               return;
             }
@@ -144,7 +145,7 @@ export class ProxyServer extends EventEmitter {
   private async authUserFromServer(username = "", uuid = ""): Promise<string> {
     try {
       const resp = await fetch(
-        this.config.authServerUrl + "?key=" + this.config.authServerKey + "&username=" + username + "&uuid=" + uuid, {
+        this.config.authServerUrl + "?key=" + this.config.authServerKey + "&username=" + username + "&uuid=" + uuid + "&group=" + this.config.authGroup, {
         method: 'GET', headers: {
           Accept: 'application/json',
         }

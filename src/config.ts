@@ -61,6 +61,7 @@ export class Config {
   @IsOptional() @IsBoolean() public useAuthServer: boolean = false
   @IsUrl({protocols: ['http', 'https']}) authServerUrl = 'https://example.com/mc_auth.php'
   @IsUrl({protocols: ['http', 'https']}) authServerKey = ''
+  @IsUrl({protocols: ['http', 'https']}) authGroup = ''
   @IsOptional() @IsBoolean() public authUuid: boolean = false
 
   @IsOptional() @IsBoolean() public allowListOnly: boolean = false
