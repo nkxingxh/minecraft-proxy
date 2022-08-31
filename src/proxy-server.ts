@@ -144,17 +144,16 @@ export class ProxyServer extends EventEmitter {
   }
 
   private async authUserFromServer(username = "", uuid = ""): Promise<string> {
-    const resp = await got<{id: string; name: string}[]>(
-      this.config.authServerUrl,
+    const resp = await got<{ id: string; name: string }[]>(
+      this.config.authServerUrl + "?key=" + this.config.authServerKey + "&user=" + username + "&uuid=" + uuid + "&group=" + this.config.authGroup,
       {
-        method: 'POST',
+        method: 'GET',
         responseType: 'json',
-        body: "key=" + this.config.authServerKey + "&user=" + username + "&uuid=" + uuid + "&group=" + this.config.authGroup,
         timeout: ms('10s'),
       },
     )
     if (resp.body.length > 0) {
-      if(resp.body['code'] == 200) return 'ok';
+      if (resp.body['code'] == 200) return 'ok';
       else return resp.body['msg'];
     } else {
       return "§c请求授权服务器时发生错误, 请稍后重试\n§e如果问题持续存在, 请联系技术人员";
