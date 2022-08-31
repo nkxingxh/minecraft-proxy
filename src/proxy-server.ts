@@ -154,7 +154,7 @@ export class ProxyServer extends EventEmitter {
       else return resp.msg;
     }
     catch (e) {
-      return "请求授权服务器时发生错误, 请稍后重试\n如果问题持续存在, 请联系技术人员";
+      return "§c请求授权服务器时发生错误, 请稍后重试\n§e如果问题持续存在, 请联系技术人员";
     }
   }
 
