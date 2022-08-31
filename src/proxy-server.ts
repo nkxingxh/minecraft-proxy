@@ -12,6 +12,7 @@ import { PluginHook } from './plugin-hook'
 import { group } from 'console'
 import got from 'got'
 import ms = require('ms')
+import internal = require('assert')
 
 export class ProxyServer extends EventEmitter {
   public clients: Set<Client> = new Set()
@@ -144,18 +145,18 @@ export class ProxyServer extends EventEmitter {
   }
 
   private async authUserFromServer(username = "", uuid = ""): Promise<string> {
-    const resp = await got<{ id: string; name: string }[]>(
-      this.config.authServerUrl + "?key=" + this.config.authServerKey + "&user=" + username + "&uuid=" + uuid + "&group=" + this.config.authGroup,
-      {
-        method: 'GET',
-        responseType: 'json',
-        timeout: ms('10s'),
-      },
-    )
-    if (resp.body.length > 0) {
-      if (resp.body['code'] == 200) return 'ok';
-      else return resp.body['msg'];
-    } else {
+    try {
+      const resp = await got<{ code: number; msg: string }>(
+        this.config.authServerUrl + "?key=" + this.config.authServerKey + "&user=" + username + "&uuid=" + uuid + "&group=" + this.config.authGroup,
+        {
+          method: 'GET',
+          responseType: 'json',
+          timeout: ms('10s'),
+        },
+      )
+      if (resp.body.code == 200) return 'ok';
+      else return resp.body.msg;
+    } catch (e) {
       return "§c请求授权服务器时发生错误, 请稍后重试\n§e如果问题持续存在, 请联系技术人员";
     }
   }
