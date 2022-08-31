@@ -25,10 +25,12 @@ jobs:
 
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.0.0
+      with:
         name: minecraft-proxy.tar.gz
         path: minecraft-proxy.tar.gz
 
     - name: Upload a Build Package
       uses: actions/upload-artifact@v3.0.0
+      with:
         name: Packages
         path: pkg
