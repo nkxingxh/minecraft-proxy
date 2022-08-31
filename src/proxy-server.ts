@@ -9,8 +9,9 @@ import { Client } from './client'
 import { Config } from './config'
 import { EnumHandShakeState } from './constants'
 import { PluginHook } from './plugin-hook'
-import { fetch } from 'node-fetch';
 import { group } from 'console'
+import got from 'got'
+import ms = require('ms')
 
 export class ProxyServer extends EventEmitter {
   public clients: Set<Client> = new Set()
@@ -143,17 +144,19 @@ export class ProxyServer extends EventEmitter {
   }
 
   private async authUserFromServer(username = "", uuid = ""): Promise<string> {
-    try {
-      const resp = await fetch(
-        this.config.authServerUrl + "?key=" + this.config.authServerKey + "&user=" + username + "&uuid=" + uuid + "&group=" + this.config.authGroup, {
-        method: 'GET', headers: {
-          Accept: 'application/json',
-        }
-      });
-      if (resp.code == 200) return 'ok';
-      else return resp.msg;
-    }
-    catch (e) {
+    const resp = await got<{id: string; name: string}[]>(
+      this.config.authServerUrl,
+      {
+        method: 'POST',
+        responseType: 'json',
+        body: "key=" + this.config.authServerKey + "&user=" + username + "&uuid=" + uuid + "&group=" + this.config.authGroup,
+        timeout: ms('10s'),
+      },
+    )
+    if (resp.body.length > 0) {
+      if(resp.body['code'] == 200) return 'ok';
+      else return resp.body['msg'];
+    } else {
       return "§c请求授权服务器时发生错误, 请稍后重试\n§e如果问题持续存在, 请联系技术人员";
     }
   }
