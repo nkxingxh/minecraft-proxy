@@ -20,4 +20,15 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - run: npm install
     - run: npm run build
+    - run: tar czf minecraft-proxy.tar.gz bin/ config/ dist/ node_modules/ package.json package-lock.json README.md
+    - run: npm run pkg
 
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.0.0
+        name: minecraft-proxy.tar.gz
+        path: minecraft-proxy.tar.gz
+
+    - name: Upload a Build Package
+      uses: actions/upload-artifact@v3.0.0
+        name: Packages
+        path: pkg
